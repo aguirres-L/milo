@@ -1,5 +1,8 @@
 import { extraerMensajeErrorApi, obtenerUrlBaseApi } from './apiClient'
-import type { ResultadoDiccionario } from '../types/dictionary'
+import type {
+  ResultadoDiccionario,
+  ResultadoDiccionarioUnificado,
+} from '../types/dictionary'
 
 export async function buscarPalabraDiccionario(
   termino: string,
@@ -19,6 +22,24 @@ export async function buscarPalabraDiccionario(
   }
   try {
     return JSON.parse(texto) as ResultadoDiccionario
+  } catch {
+    throw new Error('Respuesta del diccionario no es JSON válido')
+  }
+}
+
+export async function buscarDiccionarioUnificado(
+  termino: string,
+): Promise<ResultadoDiccionarioUnificado> {
+  const base = obtenerUrlBaseApi()
+  const url = new URL(`${base}/dictionary/lookup-unified`)
+  url.searchParams.set('q', termino.trim())
+  const res = await fetch(url.toString())
+  const texto = await res.text()
+  if (!res.ok) {
+    throw new Error(extraerMensajeErrorApi(res.status, texto))
+  }
+  try {
+    return JSON.parse(texto) as ResultadoDiccionarioUnificado
   } catch {
     throw new Error('Respuesta del diccionario no es JSON válido')
   }

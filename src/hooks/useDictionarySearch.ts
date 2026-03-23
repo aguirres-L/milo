@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react'
-import { buscarPalabraDiccionario } from '../lib/dictionaryApi'
-import type { ResultadoDiccionario } from '../types/dictionary'
+import { buscarDiccionarioUnificado } from '../lib/dictionaryApi'
+import type { ResultadoDiccionarioUnificado } from '../types/dictionary'
 
-export function useDictionaryColumn(fromLang: 'en' | 'es') {
+export function useDictionaryUnified() {
   const [terminoEntrada, setTerminoEntrada] = useState('')
-  const [resultado, setResultado] = useState<ResultadoDiccionario | null>(null)
+  const [resultado, setResultado] =
+    useState<ResultadoDiccionarioUnificado | null>(null)
   const [isCargando, setIsCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -12,17 +13,13 @@ export function useDictionaryColumn(fromLang: 'en' | 'es') {
     async (texto?: string) => {
       const t = (texto ?? terminoEntrada).trim()
       if (!t) {
-        setError(
-          fromLang === 'es'
-            ? 'Escribí una palabra en español'
-            : 'Escribí una palabra en inglés',
-        )
+        setError('Escribí una palabra o una frase corta')
         return
       }
       setIsCargando(true)
       setError(null)
       try {
-        const r = await buscarPalabraDiccionario(t, { fromLang })
+        const r = await buscarDiccionarioUnificado(t)
         setResultado(r)
         setTerminoEntrada(r.consulta)
       } catch (e) {
@@ -32,7 +29,7 @@ export function useDictionaryColumn(fromLang: 'en' | 'es') {
         setIsCargando(false)
       }
     },
-    [fromLang, terminoEntrada],
+    [terminoEntrada],
   )
 
   const limpiar = useCallback(() => {
@@ -48,8 +45,9 @@ export function useDictionaryColumn(fromLang: 'en' | 'es') {
     error,
     buscar,
     limpiar,
-    fromLang,
   }
 }
 
-export type BusquedaColumnaDiccionario = ReturnType<typeof useDictionaryColumn>
+export type BusquedaDiccionarioUnificada = ReturnType<
+  typeof useDictionaryUnified
+>

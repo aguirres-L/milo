@@ -1,8 +1,8 @@
 import { useEffect, useId } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  useDictionaryColumn,
-  type BusquedaColumnaDiccionario,
+  useDictionaryUnified,
+  type BusquedaDiccionarioUnificada,
 } from '../../hooks/useDictionarySearch'
 import type { ResultadoDiccionario } from '../../types/dictionary'
 
@@ -11,23 +11,51 @@ type Props = {
   onDrawerMovilAbiertoChange: (abierto: boolean) => void
 }
 
-function BloqueResultado({ r }: { r: ResultadoDiccionario }) {
+function tituloSeccionEntrada(r: ResultadoDiccionario): string {
+  return r.idioma_consulta === 'en'
+    ? 'Palabra en inglés'
+    : 'Desde tu búsqueda en español'
+}
+
+function BloqueResultado({
+  r,
+  mostrarTituloSeccion,
+}: {
+  r: ResultadoDiccionario
+  mostrarTituloSeccion: boolean
+}) {
   return (
     <div className="space-y-2 text-xs">
-      <div className="flex flex-wrap items-baseline justify-between gap-1">
-        <h3 className="text-sm font-semibold text-milo-text">{r.palabra}</h3>
-      </div>
+      {mostrarTituloSeccion && (
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-milo-accent">
+          {tituloSeccionEntrada(r)}
+        </p>
+      )}
+      {r.idioma_consulta === 'en' && r.traduccion_es ? (
+        <p className="text-sm text-milo-text">
+          <span className="font-semibold">{r.palabra}</span>
+          <span className="mx-1.5 text-milo-muted">→</span>
+          <span>{r.traduccion_es}</span>
+        </p>
+      ) : (
+        <div className="flex flex-wrap items-baseline justify-between gap-1">
+          <h3 className="text-sm font-semibold text-milo-text">{r.palabra}</h3>
+        </div>
+      )}
       {r.idioma_consulta === 'es' && (
         <p className="text-milo-muted">
-          Buscaste en español:{' '}
+          Buscaste:{' '}
           <span className="font-medium text-milo-text">{r.consulta}</span>
+          {' · '}
+          Entrada del diccionario (inglés):{' '}
+          <span className="font-medium text-milo-text">{r.palabra}</span>
         </p>
       )}
       {r.fonetica && <p className="text-milo-muted">{r.fonetica}</p>}
-      {r.traduccion_es && (
+      {r.idioma_consulta === 'es' && r.traduccion_es && (
         <p className="rounded-lg bg-milo-elevated/80 px-2 py-1.5 text-milo-text">
           <span className="text-[10px] font-medium text-milo-muted">
-            {r.idioma_consulta === 'en' ? 'ES (aprox.): ' : 'En español: '}
+            Pista en español (aprox.):{' '}
           </span>
           {r.traduccion_es}
         </p>
@@ -58,100 +86,131 @@ function BloqueResultado({ r }: { r: ResultadoDiccionario }) {
   )
 }
 
-function ColumnaDiccionario({
-  terminoEntrada,
-  setTerminoEntrada,
-  resultado,
-  isCargando,
-  error,
-  buscar,
-  limpiar,
-  fromLang,
-}: BusquedaColumnaDiccionario) {
-  const idInput = useId()
-  const tituloCorto =
-    fromLang === 'es' ? 'Español → English' : 'English → Español'
-  const placeholder =
-    fromLang === 'es' ? 'Ej. azul…' : 'Ej. more…'
-
+function BloqueFraseUnificada({
+  fraseOrigen,
+  traduccion,
+}: {
+  fraseOrigen: 'en' | 'es'
+  traduccion: string
+}) {
+  const esEnEs = fraseOrigen === 'en'
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:border-r lg:border-milo-border lg:pr-3 last:lg:border-r-0 last:lg:pr-0">
-      <p className="mb-1.5 text-[11px] font-medium text-milo-accent">
-        {tituloCorto}
+    <div className="space-y-2 rounded-lg border border-milo-border bg-milo-canvas/40 p-3">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-milo-accent">
+        {esEnEs ? 'Frase · inglés → español' : 'Frase · español → inglés'}
       </p>
-      <form
-        className="shrink-0"
-        onSubmit={(e) => {
-          e.preventDefault()
-          void buscar()
-        }}
-      >
-        <label className="sr-only" htmlFor={idInput}>
-          {fromLang === 'es' ? 'Palabra en español' : 'Palabra en inglés'}
-        </label>
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch">
-          <input
-            id={idInput}
-            type="text"
-            value={terminoEntrada}
-            onChange={(e) => setTerminoEntrada(e.target.value)}
-            placeholder={placeholder}
-            className="min-w-0 flex-1 rounded-xl border border-milo-border bg-milo-canvas px-2 py-1.5 text-xs text-milo-text placeholder:text-milo-muted focus:border-milo-accent/50 focus:outline-none"
-            autoComplete="off"
-            spellCheck={fromLang === 'es'}
-          />
-          <button
-            type="submit"
-            disabled={isCargando}
-            className="shrink-0 rounded-xl bg-milo-accent px-2 py-1.5 text-xs font-medium text-milo-canvas hover:opacity-90 disabled:opacity-40"
-          >
-            {isCargando ? '…' : 'Buscar'}
-          </button>
-        </div>
-      </form>
-      <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
-        {error && (
-          <p className="rounded-lg border border-red-900/40 bg-red-950/30 px-2 py-1.5 text-[11px] text-red-200">
-            {error}
-          </p>
-        )}
-        {resultado && (
-          <div className="space-y-2">
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => limpiar()}
-                className="text-[10px] text-milo-accent hover:underline"
-              >
-                Limpiar
-              </button>
-            </div>
-            <BloqueResultado r={resultado} />
-          </div>
-        )}
-      </div>
+      <p className="text-sm leading-relaxed text-milo-text">{traduccion}</p>
+      <p className="text-[10px] leading-snug text-milo-muted">
+        {esEnEs
+          ? 'Las definiciones del diccionario son por palabra: probá una sola palabra si querés fonética y acepciones.'
+          : 'Para definiciones en inglés con ejemplos, probá también una palabra suelta en español.'}
+      </p>
     </div>
   )
 }
 
 function ContenidoDiccionario({
-  columnaEs,
-  columnaEn,
+  busqueda,
 }: {
-  columnaEs: BusquedaColumnaDiccionario
-  columnaEn: BusquedaColumnaDiccionario
+  busqueda: BusquedaDiccionarioUnificada
 }) {
+  const {
+    terminoEntrada,
+    setTerminoEntrada,
+    resultado,
+    isCargando,
+    error,
+    buscar,
+    limpiar,
+  } = busqueda
+  const idInput = useId()
+  const variasEntradas =
+    resultado && resultado.entradas.length > 1
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-          <ColumnaDiccionario {...columnaEs} />
-          <ColumnaDiccionario {...columnaEn} />
+        <form
+          className="shrink-0"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void buscar()
+          }}
+        >
+          <label className="sr-only" htmlFor={idInput}>
+            Palabra o frase
+          </label>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch">
+            <input
+              id={idInput}
+              type="text"
+              value={terminoEntrada}
+              onChange={(e) => setTerminoEntrada(e.target.value)}
+              placeholder="Ej. blue, i can, azul, nariz…"
+              className="min-w-0 flex-1 rounded-xl border border-milo-border bg-milo-canvas px-2 py-1.5 text-xs text-milo-text placeholder:text-milo-muted focus:border-milo-accent/50 focus:outline-none"
+              autoComplete="off"
+              spellCheck
+            />
+            <button
+              type="submit"
+              disabled={isCargando}
+              className="shrink-0 rounded-xl bg-milo-accent px-2 py-1.5 text-xs font-medium text-milo-canvas hover:opacity-90 disabled:opacity-40"
+            >
+              {isCargando ? '…' : 'Buscar'}
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-2 min-h-0 flex-1 space-y-3">
+          {error && (
+            <p className="rounded-lg border border-red-900/40 bg-red-950/30 px-2 py-1.5 text-[11px] text-red-200">
+              {error}
+            </p>
+          )}
+          {resultado && (
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => limpiar()}
+                  className="text-[10px] text-milo-accent hover:underline"
+                >
+                  Limpiar
+                </button>
+              </div>
+              {resultado.es_frase &&
+                resultado.frase_origen &&
+                resultado.traduccion_frase && (
+                  <BloqueFraseUnificada
+                    fraseOrigen={resultado.frase_origen}
+                    traduccion={resultado.traduccion_frase}
+                  />
+                )}
+              {resultado.entradas.map((r, idx) => (
+                <div
+                  key={`${r.palabra}-${r.idioma_consulta}-${idx}`}
+                  className={
+                    idx > 0
+                      ? 'border-t border-milo-border pt-3'
+                      : undefined
+                  }
+                >
+                  <BloqueResultado
+                    r={r}
+                    mostrarTituloSeccion={Boolean(variasEntradas)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        <p className="mt-3 text-center text-[11px] leading-snug text-milo-muted lg:text-left">
-          Izquierda: palabra en español → equivalente en inglés y definiciones en
-          inglés. Derecha: palabra en inglés → definiciones en inglés y pista en
-          español.
+
+        <p className="mt-4 text-[11px] leading-snug text-milo-muted">
+          Una sola búsqueda: en inglés ves la palabra, la traducción al español y
+          las definiciones en inglés; en español te llevamos al equivalente en el
+          diccionario inglés. Si hay dos interpretaciones posibles, mostramos
+          ambas. Las frases cortas se traducen enteras (por ejemplo &quot;i
+          can&quot; → &quot;yo puedo&quot;).
         </p>
       </div>
     </div>
@@ -162,8 +221,7 @@ export default function DictionaryPanel({
   drawerMovilAbierto,
   onDrawerMovilAbiertoChange,
 }: Props) {
-  const columnaEs = useDictionaryColumn('es')
-  const columnaEn = useDictionaryColumn('en')
+  const busqueda = useDictionaryUnified()
 
   useEffect(() => {
     if (!drawerMovilAbierto) return
@@ -183,7 +241,7 @@ export default function DictionaryPanel({
         <div className="shrink-0 border-b border-milo-border px-4 py-3 text-sm font-medium text-milo-text">
           Diccionario
         </div>
-        <ContenidoDiccionario columnaEs={columnaEs} columnaEn={columnaEn} />
+        <ContenidoDiccionario busqueda={busqueda} />
       </aside>
 
       <div className="lg:hidden">
@@ -222,10 +280,7 @@ export default function DictionaryPanel({
                   </button>
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto">
-                  <ContenidoDiccionario
-                    columnaEs={columnaEs}
-                    columnaEn={columnaEn}
-                  />
+                  <ContenidoDiccionario busqueda={busqueda} />
                 </div>
               </motion.aside>
             </>

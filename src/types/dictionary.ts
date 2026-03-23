@@ -17,3 +17,12 @@ export interface ResultadoDiccionario {
   idioma_consulta: 'en' | 'es'
   consulta: string
 }
+
+/** Respuesta de GET /dictionary/lookup-unified (una caja de búsqueda). */
+export interface ResultadoDiccionarioUnificado {
+  consulta: string
+  es_frase: boolean
+  frase_origen: 'en' | 'es' | null
+  traduccion_frase: string | null
+  entradas: ResultadoDiccionario[]
+}
