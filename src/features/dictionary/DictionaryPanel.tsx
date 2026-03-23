@@ -74,7 +74,7 @@ function BloqueResultado({
                 {d.definicion}
                 {d.ejemplo && (
                   <span className="mt-0.5 block text-[10px] italic text-milo-muted">
-                    ej. {d.ejemplo}
+                    ej. en inglés: {d.ejemplo}
                   </span>
                 )}
               </li>
